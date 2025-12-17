@@ -1,5 +1,6 @@
 # Use an OpenJDK base image
-FROM openjdk:17
+FROM amazoncorretto:17
+
 
 
 # Set working directory
