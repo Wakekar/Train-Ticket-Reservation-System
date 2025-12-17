@@ -1,5 +1,5 @@
 # Use an OpenJDK base image
-FROM openjdk:17-slim
+FROM openjdk:17
 
 
 # Set working directory
