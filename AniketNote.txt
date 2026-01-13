@@ -58,3 +58,14 @@ SCM: Git
 Repository URL: https://github.com/Wakekar/Train-Ticket-Reservation-System.git
 Branch: main
 Script Path: Jenkinsfile-cd
+
+8️⃣ Optional: Trigger CD from CI
+
+At the end of your CI Jenkinsfile:
+
+stage('Trigger CD') {
+    steps {
+        build job: 'Train-Ticket-CD', wait: true
+    }
+}
+
