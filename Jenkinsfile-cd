@@ -1,0 +1,61 @@
+pipeline {
+    agent any  // Runs on master node
+
+    environment {
+        DEPLOY_DIR = "/usr/share/nginx/html"  // Default Nginx root on Amazon Linux
+    }
+
+    stages {
+
+        stage('Checkout Source Code') {
+            steps {
+                echo "Cloning repository..."
+                git url: 'https://github.com/Wakekar/Train-Ticket-Reservation-System.git', branch: 'master'
+            }
+        }
+
+        stage('Install Nginx (if missing)') {
+            steps {
+                sh '''
+                if ! command -v nginx >/dev/null; then
+                    echo "Installing Nginx..."
+                    sudo amazon-linux-extras enable nginx1
+                    sudo yum install -y nginx
+                    sudo systemctl enable nginx
+                    sudo systemctl start nginx
+                else
+                    echo "Nginx already installed ✅"
+                fi
+                '''
+            }
+        }
+
+        stage('Deploy Application') {
+            steps {
+                sh '''
+                echo "Deploying project to ${DEPLOY_DIR}..."
+
+                # Only remove old files in the directory
+                sudo rm -rf ${DEPLOY_DIR}/*
+
+                # Copy new files from workspace to Nginx root
+                sudo cp -r * ${DEPLOY_DIR}/
+
+                # Restart Nginx to apply changes
+                sudo systemctl restart nginx
+
+                echo "Deployment completed successfully 🚀"
+                '''
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "CD pipeline finished successfully ✅"
+        }
+        failure {
+            echo "CD pipeline failed ❌"
+        }
+    }
+}
