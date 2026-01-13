@@ -1,79 +1,43 @@
 pipeline {
     agent any
 
-    environment {
-        DEPLOY_DIR = "/var/www/html"
+    tools {
+        jdk 'java'   // must match JDK name in Manage Jenkins → Tools
     }
 
     stages {
 
         stage('Checkout Source Code') {
             steps {
-                git url: 'https://github.com/Wakekar/Train-Ticket-Reservation-System.git',
-                    branch: 'main'
+                // Jenkins automatically checks out the branch where Jenkinsfile exists
+                echo "Source code checked out successfully"
             }
         }
 
-        stage('Validate Project Files (CI)') {
+        stage('Verify Java') {
             steps {
                 sh '''
-                echo "Checking project files..."
-
-                if [ -f index.html ]; then
-                    echo "index.html found ✅"
-                else
-                    echo "index.html NOT found ❌"
-                    exit 1
-                fi
+                    echo "JAVA_HOME=$JAVA_HOME"
+                    java -version
                 '''
             }
         }
 
-        stage('Static Code Check (CI)') {
+        stage('Build') {
             steps {
-                sh '''
-                echo "Listing project files:"
-                ls -l
-                '''
-            }
-        }
-
-        stage('Install Web Server (CD)') {
-            steps {
-                sh '''
-                if ! command -v nginx >/dev/null; then
-                    echo "Installing Nginx..."
-                    sudo apt-get update
-                    sudo apt-get install -y nginx
-                else
-                    echo "Nginx already installed"
-                fi
-                '''
-            }
-        }
-
-        stage('Deploy Application (CD)') {
-            steps {
-                sh '''
-                echo "Deploying application..."
-
-                sudo rm -rf ${DEPLOY_DIR}/*
-                sudo cp -r ./* ${DEPLOY_DIR}/
-
-                sudo systemctl restart nginx
-
-                echo "Deployment completed successfully 🚀"
-                '''
+                echo "Build stage goes here"
+                // Example (uncomment if using Maven):
+                // sh 'mvn clean package'
             }
         }
     }
 
     post {
         success {
-            echo "CI/CD Pipeline executed successfully ✅"
+            echo '✅ Pipeline executed successfully'
         }
         failure {
-            echo "Pipeline failed ❌"
+            echo '❌ Pipeline failed'
         }
     }
 }
