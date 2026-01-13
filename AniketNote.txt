@@ -1,11 +1,12 @@
 1️⃣ Install Java 17 (Amazon Linux)
 
-sudo amazon-linux-extras enable java-openjdk17
-sudo amazon-linux-extras install java-openjdk17 -y
+yum update -y
+yum install java-17 -y
 java -version
+yum install git -y
 
 
-2️⃣ Jenkins Installation (no changes)
+2️⃣ Jenkins Installation (no changes)     or    Use Jenkins.war  file on apache tomcat
 
 sudo wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
 sudo rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io.key
