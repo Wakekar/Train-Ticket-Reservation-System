@@ -1,9 +1,5 @@
 pipeline {
-    agent any  // Runs on master node
-
-    environment {
-        DEPLOY_DIR = "/usr/share/nginx/html"  // Default Nginx root on Amazon Linux
-    }
+    agent any
 
     stages {
 
@@ -14,37 +10,21 @@ pipeline {
             }
         }
 
-        stage('Install Nginx (if missing)') {
+        stage('Deploy to Kubernetes') {
             steps {
+                echo "Deploying application to Kubernetes..."
                 sh '''
-                if ! command -v nginx >/dev/null; then
-                    echo "Installing Nginx..."
-                    sudo amazon-linux-extras enable nginx1
-                    sudo yum install -y nginx
-                    sudo systemctl enable nginx
-                    sudo systemctl start nginx
-                else
-                    echo "Nginx already installed ✅"
-                fi
+                kubectl apply -f deployment.yaml
+                kubectl rollout status deployment/train-ticket-app
                 '''
             }
         }
 
-        stage('Deploy Application') {
+        stage('Verify Deployment') {
             steps {
                 sh '''
-                echo "Deploying project to ${DEPLOY_DIR}..."
-
-                # Only remove old files in the directory
-                sudo rm -rf ${DEPLOY_DIR}/*
-
-                # Copy new files from workspace to Nginx root
-                sudo cp -r * ${DEPLOY_DIR}/
-
-                # Restart Nginx to apply changes
-                sudo systemctl restart nginx
-
-                echo "Deployment completed successfully 🚀"
+                kubectl get pods
+                kubectl get svc
                 '''
             }
         }
@@ -52,10 +32,10 @@ pipeline {
 
     post {
         success {
-            echo "CD pipeline finished successfully ✅"
+            echo "✅ Application successfully deployed to Kubernetes"
         }
         failure {
-            echo "CD pipeline failed ❌"
+            echo "❌ Kubernetes deployment failed"
         }
     }
 }
