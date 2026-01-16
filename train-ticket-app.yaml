@@ -14,9 +14,18 @@ spec:
     spec:
       containers:
       - name: train-ticket-app
-        image: train-ticket-app:latest
+        image: <dockerhub-username>/train-ticket-app:latest
+        imagePullPolicy: Always
         ports:
         - containerPort: 8080
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+
 ---
 apiVersion: v1
 kind: Service
