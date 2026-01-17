@@ -14,7 +14,7 @@ pipeline {
             steps {
                 echo "Deploying application to Kubernetes..."
                 sh '''
-                kubectl apply -f deployment.yaml
+                kubectl apply -f train-ticket-app.yaml
                 kubectl rollout status deployment/train-ticket-app
                 '''
             }
