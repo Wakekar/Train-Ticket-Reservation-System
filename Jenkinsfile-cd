@@ -1,21 +1,49 @@
 pipeline {
     agent any
 
+    environment {
+        REGISTRY   = "docker.io/aniketwakekar"
+        IMAGE_NAME = "train-ticket-app"
+        IMAGE_TAG  = "${BUILD_NUMBER}"
+    }
+
     stages {
 
-        stage('Checkout Source Code') {
+        stage('Checkout Repository') {
             steps {
-                echo "Cloning repository..."
                 git url: 'https://github.com/Wakekar/Train-Ticket-Reservation-System.git', branch: 'AniketChange'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                echo "Building Docker image..."
+                sh '''
+                    docker build -t $REGISTRY/$IMAGE_NAME:$IMAGE_TAG .
+                '''
+            }
+        }
+
+        stage('Push Docker Image') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds',
+                                                 usernameVariable: 'DOCKER_USER',
+                                                 passwordVariable: 'DOCKER_PASS')]) {
+                    sh '''
+                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
+                        docker push $REGISTRY/$IMAGE_NAME:$IMAGE_TAG
+                    '''
+                }
             }
         }
 
         stage('Deploy to Kubernetes') {
             steps {
-                echo "Deploying application to Kubernetes..."
+                echo "Deploying to Kubernetes..."
                 sh '''
-                kubectl apply -f train-ticket-app.yaml
-                kubectl rollout status deployment/train-ticket-app
+                    kubectl set image deployment/train-ticket-app \
+                    train-ticket-app=$REGISTRY/$IMAGE_NAME:$IMAGE_TAG
+                    kubectl rollout status deployment/train-ticket-app
                 '''
             }
         }
@@ -23,8 +51,8 @@ pipeline {
         stage('Verify Deployment') {
             steps {
                 sh '''
-                kubectl get pods
-                kubectl get svc
+                    kubectl get pods
+                    kubectl get svc
                 '''
             }
         }
@@ -32,10 +60,10 @@ pipeline {
 
     post {
         success {
-            echo "✅ Application successfully deployed to Kubernetes"
+            echo "✅ CD pipeline completed successfully (app deployed)"
         }
         failure {
-            echo "❌ Kubernetes deployment failed"
+            echo "❌ CD pipeline failed"
         }
     }
 }
