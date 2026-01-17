@@ -2,36 +2,23 @@ pipeline {
     agent any
 
     environment {
-        REGISTRY   = "docker.io/aniketwakekar"
-        IMAGE_NAME = "train-ticket-app"
-        IMAGE_TAG  = "${BUILD_NUMBER}"
+        APP_NAME        = "myapp"
+        NAMESPACE       = "default"
+        DEPLOYMENT_NAME = "myapp-deployment"
+        CONTAINER_NAME  = "myapp-container"
+        IMAGE_NAME      = "dockerhub-username/myapp"
+        IMAGE_TAG       = "latest"
+        KUBECONFIG_CRED = "kubeconfig-file"
     }
 
     stages {
 
-        stage('Checkout Repository') {
+        stage('Set Kubeconfig') {
             steps {
-                git url: 'https://github.com/Wakekar/Train-Ticket-Reservation-System.git', branch: 'AniketChange'
-            }
-        }
-
-        stage('Build Docker Image') {
-            steps {
-                echo "Building Docker image..."
-                sh '''
-                    docker build -t $REGISTRY/$IMAGE_NAME:$IMAGE_TAG .
-                '''
-            }
-        }
-
-        stage('Push Docker Image') {
-            steps {
-                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds',
-                                                 usernameVariable: 'DOCKER_USER',
-                                                 passwordVariable: 'DOCKER_PASS')]) {
+                withCredentials([file(credentialsId: env.KUBECONFIG_CRED, variable: 'KUBECONFIG_FILE')]) {
                     sh '''
-                        echo "$DOCKER_PASS" | docker login -u "$DOCKER_USER" --password-stdin
-                        docker push $REGISTRY/$IMAGE_NAME:$IMAGE_TAG
+                      mkdir -p $HOME/.kube
+                      cp $KUBECONFIG_FILE $HOME/.kube/config
                     '''
                 }
             }
@@ -39,11 +26,19 @@ pipeline {
 
         stage('Deploy to Kubernetes') {
             steps {
-                echo "Deploying to Kubernetes..."
                 sh '''
-                    kubectl set image deployment/train-ticket-app \
-                    train-ticket-app=$REGISTRY/$IMAGE_NAME:$IMAGE_TAG
-                    kubectl rollout status deployment/train-ticket-app
+                  kubectl set image deployment/${DEPLOYMENT_NAME} \
+                  ${CONTAINER_NAME}=${IMAGE_NAME}:${IMAGE_TAG} \
+                  -n ${NAMESPACE}
+                '''
+            }
+        }
+
+        stage('Wait for Rollout') {
+            steps {
+                sh '''
+                  kubectl rollout status deployment/${DEPLOYMENT_NAME} \
+                  -n ${NAMESPACE}
                 '''
             }
         }
@@ -51,8 +46,8 @@ pipeline {
         stage('Verify Deployment') {
             steps {
                 sh '''
-                    kubectl get pods
-                    kubectl get svc
+                  kubectl get pods -n ${NAMESPACE}
+                  kubectl get svc -n ${NAMESPACE}
                 '''
             }
         }
@@ -60,10 +55,10 @@ pipeline {
 
     post {
         success {
-            echo "✅ CD pipeline completed successfully (app deployed)"
+            echo "✅ Deployment completed successfully"
         }
         failure {
-            echo "❌ CD pipeline failed"
+            echo "❌ Deployment failed"
         }
     }
 }
