@@ -2,42 +2,49 @@ pipeline {
     agent any
 
     tools {
-        jdk 'java'   // must match JDK name in Manage Jenkins → Tools
+        jdk 'java'        // Configure in Jenkins → Global Tool Configuration
+        maven 'maven'
     }
 
     stages {
 
         stage('Checkout Source Code') {
             steps {
-                // Jenkins automatically checks out the branch where Jenkinsfile exists
-                echo "Source code checked out successfully"
+                checkout scm
+                echo '✅ Source code checked out'
             }
         }
 
-        stage('Verify Java') {
+        stage('Verify Tools') {
             steps {
                 sh '''
-                    echo "JAVA_HOME=$JAVA_HOME"
                     java -version
+                    mvn -version
                 '''
             }
         }
 
-        stage('Build') {
+        stage('Build with Maven') {
             steps {
-                echo "Build stage goes here"
-                // Example (uncomment if using Maven):
-                // sh 'mvn clean package'
+                sh '''
+                    mvn clean package -DskipTests
+                '''
+            }
+        }
+
+        stage('Archive Artifact') {
+            steps {
+                archiveArtifacts artifacts: 'target/*.jar', fingerprint: true
             }
         }
     }
 
     post {
         success {
-            echo '✅ Pipeline executed successfully'
+            echo '✅ CI pipeline completed successfully'
         }
         failure {
-            echo '❌ Pipeline failed'
+            echo '❌ CI pipeline failed'
         }
     }
 }
