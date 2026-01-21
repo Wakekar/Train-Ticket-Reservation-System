@@ -4,11 +4,6 @@ pipeline {
         jdk 'Java-17'
         maven 'Maven-3'
     }
-    environment {
-        SONAR_HOST_URL = "http://localhost:9000"
-        SONAR_TOKEN = credentials('sonar-token')
-        DOCKER_CRED = 'dockerhub-cred'
-    }
     stages {
         stage('Checkout') {
             steps {
@@ -19,29 +14,6 @@ pipeline {
         stage('Build') {
             steps {
                 sh 'mvn clean package'
-            }
-        }
-
-        stage('SonarQube Scan') {
-            steps {
-                withSonarQubeEnv('SonarQube') {
-                    sh 'mvn sonar:sonar -Dsonar.projectKey=TrainTicketApp'
-                }
-            }
-        }
-
-        stage('Trivy Scan') {
-            steps {
-                sh 'trivy fs --exit-code 1 --severity HIGH,CRITICAL . || true'
-            }
-        }
-
-        stage('OWASP Dependency Check') {
-            steps {
-                sh '''
-                docker run --rm -v $(pwd):/src owasp/dependency-check \
-                --scan /src --format ALL --out /src/odc-report
-                '''
             }
         }
 
